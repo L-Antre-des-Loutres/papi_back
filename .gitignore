@@ -1,0 +1,92 @@
+### Build output ###
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+out/
+bin/
+
+### Generated sources ###
+generated-sources/
+generated-test-sources/
+
+### IntelliJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
+
+### Claude Code ###
+.claude/
+
+### Eclipse ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### Visual Studio ###
+.vs/
+
+### Mac OS ###
+.DS_Store
+
+### Windows ###
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+### Linux ###
+*~
+.directory
+
+### Logs ###
+*.log
+logs/
+
+### Environment files ###
+.env
+.env.*
+!.env.example
+
+### Local Spring profiles (allow application-dev.properties / application-prod.properties) ###
+application-local.properties
+application-local.yml
+application-secret.properties
+
+### Java / JVM ###
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+
+### Maven ###
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.properties
+dependency-reduced-pom.xml
+
+### OS / editor temp ###
+*.swp
+*.swo
+*.bak
+*.tmp
+*.orig

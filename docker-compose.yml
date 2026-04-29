@@ -1,0 +1,11 @@
+services:
+  papi-app:
+    build: .
+    container_name: papi-backend
+    ports:
+      - "8088:8080"
+    env_file:
+      - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    restart: always
