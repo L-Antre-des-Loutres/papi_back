@@ -3,7 +3,7 @@ services:
     build: .
     container_name: papi-backend
     ports:
-      - "8088:8080"
+      - "8089:8080"
     env_file:
       - .env
     environment:
