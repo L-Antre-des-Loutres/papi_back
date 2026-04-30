@@ -9,3 +9,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=prod
     restart: always
+
+networks:
+  papi-network:
+    external: true
