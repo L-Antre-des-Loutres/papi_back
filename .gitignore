@@ -12,6 +12,7 @@ bin/
 ### Generated sources ###
 generated-sources/
 generated-test-sources/
+generated-images/
 
 ### IntelliJ IDEA ###
 .idea/
