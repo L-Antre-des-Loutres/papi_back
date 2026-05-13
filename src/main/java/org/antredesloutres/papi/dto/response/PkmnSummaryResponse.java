@@ -6,5 +6,6 @@ public record PkmnSummaryResponse(
         String symbol,
         Integer nationalDexNumber,
         TypeRefResponse primaryType,
-        TypeRefResponse secondaryType
+        TypeRefResponse secondaryType,
+        String spriteUrl
 ) {}

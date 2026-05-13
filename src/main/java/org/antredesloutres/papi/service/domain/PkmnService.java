@@ -119,6 +119,7 @@ public class PkmnService {
         if (dto.getEvSpeed()         != null) pkmn.setEvSpeed(dto.getEvSpeed());
 
         if (dto.getTags()            != null) pkmn.setTags(dto.getTags());
+        if (dto.getSpriteUrl()       != null) pkmn.setSpriteUrl(dto.getSpriteUrl());
 
         pkmn.setPrimaryType(dto.getPrimaryTypeId()           != null ? typeRepository.getReferenceById(dto.getPrimaryTypeId())           : null);
         pkmn.setSecondaryType(dto.getSecondaryTypeId()       != null ? typeRepository.getReferenceById(dto.getSecondaryTypeId())         : null);

@@ -35,5 +35,6 @@ public record PkmnResponse(
         int maleRatio,
         int eggCycles,
         Set<EggGroup> eggGroups,
-        int baseFriendship
+        int baseFriendship,
+        String spriteUrl
 ) {}

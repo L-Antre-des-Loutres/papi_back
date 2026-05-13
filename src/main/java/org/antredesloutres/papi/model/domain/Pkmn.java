@@ -90,6 +90,9 @@ public class Pkmn {
     /** Base friendship (0-255). */
     private int baseFriendship;
 
+    /** URL to the Pokémon's sprite image. */
+    private String spriteUrl = "https://www.pokepedia.fr/images/f/f6/Pok%C3%A9_Poup%C3%A9e-CA.png";
+
     @JsonIgnore
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "pkmn_id")
@@ -103,6 +106,14 @@ public class Pkmn {
 
     public void setId(Integer id) {
         this.id = id;
+    }
+
+    public String getSpriteUrl() {
+        return spriteUrl;
+    }
+
+    public void setSpriteUrl(String spriteUrl) {
+        this.spriteUrl = spriteUrl;
     }
 
     public String getSymbol() {

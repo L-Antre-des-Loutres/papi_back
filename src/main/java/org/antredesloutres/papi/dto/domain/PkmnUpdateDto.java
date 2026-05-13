@@ -60,8 +60,13 @@ public class PkmnUpdateDto {
 
     private Set<String> tags;
 
+    private String spriteUrl;
+
     public String getSymbol() { return symbol; }
     public void setSymbol(String symbol) { this.symbol = symbol; }
+
+    public String getSpriteUrl() { return spriteUrl; }
+    public void setSpriteUrl(String spriteUrl) { this.spriteUrl = spriteUrl; }
 
     public Integer getPrimaryTypeId() { return primaryTypeId; }
     public void setPrimaryTypeId(Integer primaryTypeId) { this.primaryTypeId = primaryTypeId; }

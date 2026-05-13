@@ -10,8 +10,10 @@ import org.antredesloutres.papi.model.translation.PkmnTranslation;
 import org.antredesloutres.papi.model.translation.TypeTranslation;
 import org.springframework.stereotype.Service;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.net.URI;
 import java.util.Optional;
 
 @Service
@@ -56,14 +58,34 @@ public class ImageGeneratorService {
             drawTypeBadge(g, pkmn.getSecondaryType(), language, 130, typeY);
         }
 
-        // 4. Stats
-        drawStats(g, pkmn, 20, 130, width - 40);
+        // 4. Sprite
+        drawSprite(g, pkmn.getSpriteUrl(), 350, 80, 200, 200);
 
-        // 5. Abilities
+        // 5. Stats
+        drawStats(g, pkmn, 20, 130, 300);
+
+        // 6. Abilities
         drawAbilities(g, pkmn, language, 20, 320);
 
         g.dispose();
         return image;
+    }
+
+    private void drawSprite(Graphics2D g, String url, int x, int y, int w, int h) {
+        if (url == null || url.isBlank()) return;
+        try {
+            BufferedImage sprite = ImageIO.read(URI.create(url).toURL());
+            if (sprite != null) {
+                // Draw a subtle glow/circle behind the sprite
+                g.setColor(new Color(255, 255, 255, 80));
+                g.fillOval(x, y, w, h);
+                
+                // Draw sprite centered in its area
+                g.drawImage(sprite, x, y, w, h, null);
+            }
+        } catch (Exception e) {
+            // Log or ignore if sprite can't be loaded
+        }
     }
 
     private void drawTypeBadge(Graphics2D g, Type type, Language language, int x, int y) {
