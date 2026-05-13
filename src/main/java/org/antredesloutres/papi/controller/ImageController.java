@@ -6,17 +6,18 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.antredesloutres.papi.dto.response.ImageResponse;
+import org.antredesloutres.papi.model.enumerated.Language;
+import org.antredesloutres.papi.service.domain.PkmnService;
+import org.antredesloutres.papi.service.image.ImageGeneratorService;
 import org.antredesloutres.papi.service.image.ImageService;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Files;
 
@@ -27,6 +28,37 @@ import java.nio.file.Files;
 public class ImageController {
 
     private final ImageService imageService;
+    private final PkmnService pkmnService;
+    private final ImageGeneratorService imageGeneratorService;
+
+    @Operation(
+            summary = "Generate Pokémon info card",
+            description = "Generates a stylized image containing Pokémon stats and info.",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Image generated successfully",
+                            content = @Content(mediaType = "image/png")
+                    ),
+                    @ApiResponse(responseCode = "404", description = "Pokémon not found")
+            }
+    )
+    @GetMapping("/pokemon/{id}")
+    public ResponseEntity<Resource> getPkmnImage(
+            @PathVariable Integer id,
+            @RequestParam(defaultValue = "EN") Language lang) throws IOException {
+        var pkmn = pkmnService.getPkmnById(id);
+        BufferedImage image = imageGeneratorService.generatePkmnInfoImage(pkmn, lang);
+
+        String filename = "pkmn-" + id + "-" + lang.name().toLowerCase() + ".png";
+        imageService.saveImage(filename, image);
+
+        Resource resource = imageService.loadImage(filename);
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_PNG)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                .body(resource);
+    }
 
     @Operation(
             summary = "Get image metadata",
