@@ -52,25 +52,31 @@ public class ImageGeneratorService {
         double sw = width / 1920.0;
         double sh = height / 1080.0;
 
-        // Middle Top Bar: Name
-        drawName(g, pkmn, language, (int)(780 * sw), (int)(100 * sh), (int)(640 * sw), (int)(120 * sh), sw, sh);
+        // 1. Name Bar (Middle Top)
+        int nameBarY = (int)(100 * sh);
+        int nameBarH = (int)(115 * sh);
+        drawName(g, pkmn, language, (int)(785 * sw), nameBarY, (int)(630 * sw), nameBarH, sw, sh);
 
-        // Center Circle: Sprite (smaller)
-        drawSprite(g, pkmn.getSpriteUrl(), (int)(850 * sw), (int)(250 * sh), (int)(500 * sw), (int)(550 * sh));
+        // 2. Type Bar (Middle Bottom)
+        int typeBarY = (int)(865 * sh);
+        int typeBarH = (int)(115 * sh);
+        drawTypes(g, pkmn, language, (int)(785 * sw), typeBarY, (int)(630 * sw), typeBarH, sw, sh);
 
-        // Middle Bottom Bar: Types
-        drawTypes(g, pkmn, language, (int)(780 * sw), (int)(860 * sh), (int)(640 * sw), (int)(120 * sh), sw, sh);
+        // 3. Sprite Area (Between bars)
+        int spriteY = nameBarY + nameBarH;
+        int spriteH = typeBarY - spriteY;
+        drawSprite(g, pkmn.getSpriteUrl(), (int)(850 * sw), spriteY, (int)(500 * sw), spriteH);
 
-        // Top Left Box: Stats
+        // 4. Stats Box (Top Left)
         drawStats(g, pkmn, (int)(100 * sw), (int)(100 * sh), (int)(610 * sw), (int)(420 * sh), sw, sh);
 
-        // Bottom Left Box: Abilities (centered)
+        // 5. Abilities Box (Bottom Left)
         drawAbilities(g, pkmn, language, (int)(100 * sw), (int)(560 * sh), (int)(610 * sw), (int)(420 * sh), sw, sh);
 
-        // Top Right Box: Info (Height, Weight, Experience)
+        // 6. Info Box (Top Right)
         drawInfo(g, pkmn, language, (int)(1480 * sw), (int)(100 * sh), (int)(360 * sw), (int)(520 * sh), sw, sh);
 
-        // Bottom Right Circle: National Dex Number
+        // 7. National Dex Circle (Bottom Right)
         drawDexNumber(g, pkmn.getNationalDexNumber(), (int)(1540 * sw), (int)(660 * sh), (int)(300 * sw), (int)(300 * sh), sw, sh);
 
         g.dispose();
@@ -82,278 +88,205 @@ public class ImageGeneratorService {
         String form = getFormName(pkmn, language);
         
         g.setColor(Color.BLACK);
-        g.setFont(new Font("SansSerif", Font.BOLD, (int)(48 * sw)));
-        FontMetrics fm = g.getFontMetrics();
+        g.setFont(new Font("SansSerif", Font.BOLD, (int)(64 * sw)));
+        FontMetrics fmN = g.getFontMetrics();
         
-        int textY = y + (h / 2) + (fm.getAscent() / 2) - (int)(5 * sh);
         if (form != null && !form.equalsIgnoreCase("normal")) {
-            textY -= (int)(15 * sh);
-            g.drawString(name, x + (w - fm.stringWidth(name)) / 2, textY);
+            g.setFont(new Font("SansSerif", Font.ITALIC, (int)(32 * sw)));
+            FontMetrics fmF = g.getFontMetrics();
+            int gap = (int)(8 * sh);
+            int totalH = fmN.getAscent() + gap + fmF.getAscent();
+            int startY = y + (h - totalH) / 2 + fmN.getAscent();
             
-            g.setFont(new Font("SansSerif", Font.ITALIC, (int)(24 * sw)));
-            fm = g.getFontMetrics();
-            g.drawString("(" + form + ")", x + (w - fm.stringWidth("(" + form + ")")) / 2, textY + (int)(35 * sh));
+            g.setFont(new Font("SansSerif", Font.BOLD, (int)(64 * sw)));
+            g.drawString(name, x + (w - fmN.stringWidth(name)) / 2, startY);
+            g.setFont(new Font("SansSerif", Font.ITALIC, (int)(32 * sw)));
+            g.drawString("(" + form + ")", x + (w - fmF.stringWidth("(" + form + ")")) / 2, startY + gap + fmF.getAscent());
         } else {
-            g.drawString(name, x + (w - fm.stringWidth(name)) / 2, textY);
+            int textY = y + (h / 2) + ((fmN.getAscent() - fmN.getDescent()) / 2);
+            g.drawString(name, x + (w - fmN.stringWidth(name)) / 2, textY);
         }
     }
 
     private void drawTypes(Graphics2D g, Pkmn pkmn, Language language, int x, int y, int w, int h, double sw, double sh) {
-        List<Type> types = new ArrayList<>();
-        types.add(pkmn.getPrimaryType());
-        if (pkmn.getSecondaryType() != null) types.add(pkmn.getSecondaryType());
+        List<Type> list = new ArrayList<>();
+        list.add(pkmn.getPrimaryType());
+        if (pkmn.getSecondaryType() != null) list.add(pkmn.getSecondaryType());
 
-        int typeWidth = (int)(160 * sw);
-        int typeHeight = (int)(50 * sh);
-        int typeGap = (int)(20 * sw);
-        int totalTypesWidth = types.size() * typeWidth + (types.size() - 1) * typeGap;
-        int startX = x + (w - totalTypesWidth) / 2;
-        int typeY = y + (h - typeHeight) / 2;
+        int tW = (int)(200 * sw);
+        int tH = (int)(75 * sh);
+        int gap = (int)(30 * sw);
+        int totalW = list.size() * tW + (list.size() - 1) * gap;
+        int startX = x + (w - totalW) / 2;
+        int typeY = y + (h - tH) / 2;
 
-        for (int i = 0; i < types.size(); i++) {
-            Type t = types.get(i);
+        for (int i = 0; i < list.size(); i++) {
+            Type t = list.get(i);
             if (t == null) continue;
-            
-            Color typeColor = parseColor(t.getColor(), new Color(168, 168, 120));
-            g.setColor(typeColor);
-            g.fillRoundRect(startX + i * (typeWidth + typeGap), typeY, typeWidth, typeHeight, 15, 15);
+            g.setColor(parseColor(t.getColor(), new Color(168, 168, 120)));
+            g.fillRoundRect(startX + i * (tW + gap), typeY, tW, tH, 30, 30);
             
             g.setColor(Color.WHITE);
-            g.setFont(new Font("SansSerif", Font.BOLD, (int)(22 * sw)));
-            String typeName = getTypeName(t, language).toUpperCase();
-            FontMetrics tfm = g.getFontMetrics();
-            g.drawString(typeName, startX + i * (typeWidth + typeGap) + (typeWidth - tfm.stringWidth(typeName)) / 2, typeY + (int)(34 * sh));
+            g.setFont(new Font("SansSerif", Font.BOLD, (int)(32 * sw)));
+            String name = getTypeName(t, language).toUpperCase();
+            FontMetrics fm = g.getFontMetrics();
+            int tx = startX + i * (tW + gap) + (tW - fm.stringWidth(name)) / 2;
+            int ty = typeY + (tH / 2) + ((fm.getAscent() - fm.getDescent()) / 2);
+            g.drawString(name, tx, ty);
         }
     }
 
     private void drawInfo(Graphics2D g, Pkmn pkmn, Language language, int x, int y, int w, int h, double sw, double sh) {
-        g.setColor(Color.BLACK);
-        g.setFont(new Font("SansSerif", Font.BOLD, (int)(28 * sw)));
-        int currentY = y + (int)(80 * sh);
-        int labelX = x + (int)(40 * sw);
-        int valueX = x + w - (int)(40 * sw);
-
-        String[][] info = {
+        String title = "INFORMATIONS";
+        String[][] items = {
             {"Taille", String.format("%.1f m", pkmn.getHeight() / 100.0)},
             {"Poids", String.format("%.1f kg", pkmn.getWeight() / 10.0)},
             {"Exp Base", String.valueOf(pkmn.getExperienceYield())},
             {"Capture", String.valueOf(pkmn.getCatchRate())}
         };
 
-        for (String[] item : info) {
-            g.setFont(new Font("SansSerif", Font.BOLD, (int)(22 * sw)));
-            g.drawString(item[0], labelX, currentY);
-            
-            g.setFont(new Font("SansSerif", Font.PLAIN, (int)(22 * sw)));
-            int valW = g.getFontMetrics().stringWidth(item[1]);
-            g.drawString(item[1], valueX - valW, currentY);
-            
-            currentY += (int)(60 * sh);
-        }
+        g.setFont(new Font("SansSerif", Font.BOLD, (int)(36 * sw)));
+        int titleH = g.getFontMetrics().getAscent();
+        g.setFont(new Font("SansSerif", Font.BOLD, (int)(28 * sw)));
+        int rowH = (int)(80 * sh);
+        int totalH = titleH + (int)(40 * sh) + (items.length * rowH);
         
-        // Symbol at the bottom of the box
-        g.setColor(new Color(0, 0, 0, 80));
-        g.setFont(new Font("Monospaced", Font.PLAIN, (int)(20 * sw)));
-        String symbol = pkmn.getSymbol();
-        int symW = g.getFontMetrics().stringWidth(symbol);
-        g.drawString(symbol, x + (w - symW) / 2, y + h - (int)(40 * sh));
-    }
+        int currentY = y + (h - totalH) / 2 + titleH;
+        int paddingX = (int)(60 * sw);
 
-    private void drawDexNumber(Graphics2D g, Integer dexNum, int x, int y, int w, int h, double sw, double sh) {
-        if (dexNum == null) return;
-        String text = String.format("#%04d", dexNum);
-        g.setFont(new Font("SansSerif", Font.BOLD, (int)(56 * sw)));
-        g.setColor(new Color(50, 50, 50));
-        FontMetrics fm = g.getFontMetrics();
-        g.drawString(text, x + (w - fm.stringWidth(text)) / 2, y + (h / 2) + (fm.getAscent() / 2));
+        g.setColor(Color.BLACK);
+        g.setFont(new Font("SansSerif", Font.BOLD, (int)(36 * sw)));
+        g.drawString(title, x + (w - g.getFontMetrics().stringWidth(title)) / 2, currentY);
+        currentY += (int)(60 * sh);
+
+        for (String[] item : items) {
+            g.setFont(new Font("SansSerif", Font.BOLD, (int)(28 * sw)));
+            g.drawString(item[0], x + paddingX, currentY);
+            g.setFont(new Font("SansSerif", Font.PLAIN, (int)(28 * sw)));
+            int valW = g.getFontMetrics().stringWidth(item[1]);
+            g.drawString(item[1], x + w - paddingX - valW, currentY);
+            currentY += rowH;
+        }
     }
 
     private void drawStats(Graphics2D g, Pkmn pkmn, int x, int y, int w, int h, double sw, double sh) {
-        String[] labels = {"PV", "Atk", "Def", "Atk Sp", "Def Sp", "Vit"};
-        int[] values = {
-                pkmn.getBaseHp(), pkmn.getBaseAttack(), pkmn.getBaseDefense(),
-                pkmn.getBaseSpeAttack(), pkmn.getBaseSpeDefense(), pkmn.getBaseSpeed()
-        };
-        
-        Color[] colors = {
-            new Color(255, 89, 89),  // HP
-            new Color(240, 128, 48), // Atk
-            new Color(248, 208, 48), // Def
-            new Color(104, 144, 240),// SpAtk
-            new Color(120, 200, 80), // SpDef
-            new Color(248, 88, 136)  // Speed
-        };
+        String[] labels = {"PV", "ATK", "DEF", "SPA", "SPD", "VIT"};
+        int[] values = { pkmn.getBaseHp(), pkmn.getBaseAttack(), pkmn.getBaseDefense(), pkmn.getBaseSpeAttack(), pkmn.getBaseSpeDefense(), pkmn.getBaseSpeed() };
+        Color[] colors = { new Color(255, 100, 100), new Color(255, 175, 120), new Color(255, 230, 120), new Color(130, 180, 255), new Color(160, 230, 130), new Color(255, 140, 180) };
 
-        int paddingX = (int)(40 * sw);
-        int currentY = y + (int)(80 * sh);
-        int labelWidth = (int)(100 * sw);
-        int barX = x + paddingX + labelWidth;
-        int barMaxWidth = w - (int)(240 * sw); // Adjusted to avoid overflow
-        int barHeight = (int)(22 * sh);
-        int spacing = (int)(55 * sh);
+        int padY = (int)(80 * sh);
+        int rowH = (h - 2 * padY) / 6;
+        int startY = y + padY;
+        int padX = (int)(60 * sw);
+        int labelW = (int)(110 * sw);
+        int barH = (int)(32 * sh);
+        int barMaxW = w - 2 * padX - labelW - (int)(70 * sw);
 
-        g.setFont(new Font("SansSerif", Font.BOLD, (int)(22 * sw)));
-        
-        for (int i = 0; i < labels.length; i++) {
+        g.setFont(new Font("SansSerif", Font.BOLD, (int)(28 * sw)));
+        FontMetrics fm = g.getFontMetrics();
+        int bY = (rowH / 2) + ((fm.getAscent() - fm.getDescent()) / 2);
+        int vY = (rowH - barH) / 2;
+
+        for (int i = 0; i < 6; i++) {
+            int rY = startY + i * rowH;
             g.setColor(Color.BLACK);
-            g.drawString(labels[i], x + paddingX, currentY + (int)(18 * sh));
-
-            // Bar background
+            g.drawString(labels[i], x + padX, rY + bY);
             g.setColor(new Color(0, 0, 0, 30));
-            g.fillRoundRect(barX, currentY, barMaxWidth, barHeight, 8, 8);
-
-            // Bar foreground
+            g.fillRoundRect(x + padX + labelW, rY + vY, barMaxW, barH, 15, 15);
             g.setColor(colors[i]);
-            int barWidth = (int) (Math.min(values[i], 255) / 255.0 * barMaxWidth);
-            g.fillRoundRect(barX, currentY, barWidth, barHeight, 8, 8);
-
-            // Value
+            int bW = (int)(Math.min(values[i], 255) / 255.0 * barMaxW);
+            g.fillRoundRect(x + padX + labelW, rY + vY, bW, barH, 15, 15);
             g.setColor(Color.BLACK);
-            g.drawString(String.valueOf(values[i]), barX + barMaxWidth + (int)(15 * sw), currentY + (int)(18 * sh));
-
-            currentY += spacing;
+            g.drawString(String.valueOf(values[i]), x + padX + labelW + barMaxW + (int)(15 * sw), rY + bY);
         }
     }
 
     private void drawAbilities(Graphics2D g, Pkmn pkmn, Language language, int x, int y, int w, int h, double sw, double sh) {
-        int padding = (int)(40 * sw);
-        int currentY = y + (int)(70 * sh);
-
+        List<Ability> list = new ArrayList<>();
+        if (pkmn.getPrimaryAbility() != null) list.add(pkmn.getPrimaryAbility());
+        if (pkmn.getSecondaryAbility() != null) list.add(pkmn.getSecondaryAbility());
+        
+        g.setFont(new Font("SansSerif", Font.BOLD, (int)(42 * sw)));
+        int tH = g.getFontMetrics().getAscent();
+        int totalH = tH + (list.size() * (int)(120 * sh));
+        if (pkmn.getHiddenAbility() != null) totalH += (int)(60 * sh);
+        
+        int currentY = y + (h - totalH) / 2 + tH;
         g.setColor(Color.BLACK);
-        g.setFont(new Font("SansSerif", Font.BOLD, (int)(32 * sw)));
         String title = "TALENTS";
-        int titleW = g.getFontMetrics().stringWidth(title);
-        g.drawString(title, x + (w - titleW) / 2, currentY);
-        currentY += (int)(60 * sh);
+        g.drawString(title, x + (w - g.getFontMetrics().stringWidth(title)) / 2, currentY);
+        currentY += (int)(80 * sh);
 
-        if (pkmn.getPrimaryAbility() != null) {
-            currentY = drawAbilityCentered(g, pkmn.getPrimaryAbility(), language, x, currentY, w, sw, sh, false);
-            currentY += (int)(20 * sh);
+        for (Ability a : list) {
+            currentY = drawAbilityCentered(g, a, language, x, currentY, w, sw, sh, false);
+            currentY += (int)(40 * sh);
         }
-
-        if (pkmn.getSecondaryAbility() != null) {
-            currentY = drawAbilityCentered(g, pkmn.getSecondaryAbility(), language, x, currentY, w, sw, sh, false);
-            currentY += (int)(20 * sh);
-        }
-
         if (pkmn.getHiddenAbility() != null) {
             drawAbilityCentered(g, pkmn.getHiddenAbility(), language, x, currentY, w, sw, sh, true);
         }
     }
 
     private int drawAbilityCentered(Graphics2D g, Ability ability, Language language, int x, int y, int w, double sw, double sh, boolean hidden) {
-        String name = getAbilityName(ability, language);
-        if (hidden) name += " (Caché)";
-        
-        g.setFont(new Font("SansSerif", Font.BOLD, (int)(24 * sw)));
-        g.setColor(new Color(0, 80, 160));
-        int nameW = g.getFontMetrics().stringWidth(name);
-        g.drawString(name, x + (w - nameW) / 2, y);
-
-        int nextY = y + (int)(30 * sh);
+        String name = getAbilityName(ability, language) + (hidden ? " (Caché)" : "");
+        g.setFont(new Font("SansSerif", Font.BOLD, (int)(32 * sw)));
+        g.setColor(new Color(0, 100, 200));
+        g.drawString(name, x + (w - g.getFontMetrics().stringWidth(name)) / 2, y);
+        int nextY = y + (int)(40 * sh);
         String desc = getAbilityDescription(ability, language);
         if (!desc.isEmpty() && !hidden) {
-            g.setFont(new Font("SansSerif", Font.PLAIN, (int)(18 * sw)));
+            g.setFont(new Font("SansSerif", Font.PLAIN, (int)(24 * sw)));
             g.setColor(Color.DARK_GRAY);
-            nextY = drawWrappedTextCentered(g, desc, x, nextY, w, (int)(40 * sw), (int)(24 * sh));
+            nextY = drawWrappedTextCentered(g, desc, x, nextY, w, (int)(60 * sw), (int)(32 * sh));
         }
         return nextY;
     }
 
-    private int drawWrappedTextCentered(Graphics2D g, String text, int x, int y, int w, int padding, int lineHeight) {
+    private int drawWrappedTextCentered(Graphics2D g, String text, int x, int y, int w, int pad, int lH) {
         if (text == null || text.isBlank()) return y;
         FontMetrics fm = g.getFontMetrics();
-        int maxWidth = w - 2 * padding;
+        int maxW = w - 2 * pad;
         String[] words = text.split(" ");
         List<String> lines = new ArrayList<>();
-        StringBuilder currentLine = new StringBuilder();
-
+        StringBuilder cur = new StringBuilder();
         for (String word : words) {
-            if (fm.stringWidth(currentLine.toString() + word) < maxWidth) {
-                currentLine.append(word).append(" ");
-            } else {
-                lines.add(currentLine.toString().trim());
-                currentLine = new StringBuilder(word + " ");
-            }
+            if (fm.stringWidth(cur.toString() + word) < maxW) cur.append(word).append(" ");
+            else { lines.add(cur.toString().trim()); cur = new StringBuilder(word + " "); }
         }
-        lines.add(currentLine.toString().trim());
-
-        int currentY = y;
+        lines.add(cur.toString().trim());
+        int cY = y;
         for (String line : lines) {
-            int lineW = fm.stringWidth(line);
-            g.drawString(line, x + (w - lineW) / 2, currentY);
-            currentY += lineHeight;
+            g.drawString(line, x + (w - fm.stringWidth(line)) / 2, cY);
+            cY += lH;
         }
-        return currentY;
+        return cY;
     }
 
     private void drawSprite(Graphics2D g, String url, int x, int y, int w, int h) {
         if (url == null || url.isBlank()) return;
         try {
-            BufferedImage sprite = ImageIO.read(URI.create(url).toURL());
-            if (sprite != null) {
-                int sw = sprite.getWidth();
-                int sh = sprite.getHeight();
-                double ratio = Math.min((double) w / sw, (double) h / sh);
-                int newW = (int) (sw * ratio);
-                int newH = (int) (sh * ratio);
-                int newX = x + (w - newW) / 2;
-                int newY = y + (h - newH) / 2;
-                g.drawImage(sprite, newX, newY, newW, newH, null);
+            BufferedImage s = ImageIO.read(URI.create(url).toURL());
+            if (s != null) {
+                double r = Math.min((double) w / s.getWidth(), (double) h / s.getHeight());
+                int nW = (int) (s.getWidth() * r);
+                int nH = (int) (s.getHeight() * r);
+                g.drawImage(s, x + (w - nW) / 2, y + (h - nH) / 2, nW, nH, null);
             }
-        } catch (Exception e) {
-        }
+        } catch (Exception e) {}
     }
 
-    private Color parseColor(String hex, Color fallback) {
-        if (hex == null || hex.isEmpty()) return fallback;
-        try {
-            return Color.decode(hex);
-        } catch (NumberFormatException e) {
-            return fallback;
-        }
+    private void drawDexNumber(Graphics2D g, Integer d, int x, int y, int w, int h, double sw, double sh) {
+        if (d == null) return;
+        String t = String.format("#%04d", d);
+        g.setFont(new Font("SansSerif", Font.BOLD, (int)(76 * sw)));
+        g.setColor(new Color(30, 30, 30));
+        FontMetrics fm = g.getFontMetrics();
+        g.drawString(t, x + (w - fm.stringWidth(t)) / 2, y + (h / 2) + ((fm.getAscent() - fm.getDescent()) / 2));
     }
 
-    private String getPkmnName(Pkmn pkmn, Language language) {
-        return pkmn.getLang().stream()
-                .filter(l -> l.getLanguage() == language)
-                .findFirst()
-                .map(PkmnTranslation::getPkmnName)
-                .orElse(pkmn.getSymbol() != null ? pkmn.getSymbol() : "Unknown");
-    }
-
-    private String getFormName(Pkmn pkmn, Language language) {
-        return pkmn.getLang().stream()
-                .filter(l -> l.getLanguage() == language)
-                .findFirst()
-                .map(PkmnTranslation::getFormName)
-                .orElse("normal");
-    }
-
-    private String getTypeName(Type type, Language language) {
-        if (type == null) return "";
-        return type.getLang().stream()
-                .filter(l -> l.getLanguage() == language)
-                .findFirst()
-                .map(TypeTranslation::getName)
-                .orElse(type.getSymbol() != null ? type.getSymbol() : "???");
-    }
-
-    private String getAbilityName(Ability ability, Language language) {
-        if (ability == null) return "None";
-        return ability.getLang().stream()
-                .filter(l -> l.getLanguage() == language)
-                .findFirst()
-                .map(AbilityTranslation::getName)
-                .orElse(ability.getSymbol() != null ? ability.getSymbol() : "???");
-    }
-
-    private String getAbilityDescription(Ability ability, Language language) {
-        if (ability == null) return "";
-        return ability.getLang().stream()
-                .filter(l -> l.getLanguage() == language)
-                .findFirst()
-                .map(AbilityTranslation::getDescription)
-                .orElse("");
-    }
+    private Color parseColor(String h, Color f) { if (h == null || h.isEmpty()) return f; try { return Color.decode(h); } catch (Exception e) { return f; } }
+    private String getPkmnName(Pkmn p, Language l) { return p.getLang().stream().filter(t -> t.getLanguage() == l).findFirst().map(PkmnTranslation::getPkmnName).orElse(p.getSymbol() != null ? p.getSymbol() : "Unknown"); }
+    private String getFormName(Pkmn p, Language l) { return p.getLang().stream().filter(t -> t.getLanguage() == l).findFirst().map(PkmnTranslation::getFormName).orElse("normal"); }
+    private String getTypeName(Type t, Language l) { if (t == null) return ""; return t.getLang().stream().filter(tr -> tr.getLanguage() == l).findFirst().map(TypeTranslation::getName).orElse(t.getSymbol() != null ? t.getSymbol() : "???"); }
+    private String getAbilityName(Ability a, Language l) { if (a == null) return "None"; return a.getLang().stream().filter(tr -> tr.getLanguage() == l).findFirst().map(AbilityTranslation::getName).orElse(a.getSymbol() != null ? a.getSymbol() : "???"); }
+    private String getAbilityDescription(Ability a, Language l) { if (a == null) return ""; return a.getLang().stream().filter(tr -> tr.getLanguage() == l).findFirst().map(AbilityTranslation::getDescription).orElse(""); }
 }
