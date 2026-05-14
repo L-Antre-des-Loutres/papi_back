@@ -14,15 +14,14 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.net.URI;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class ImageGeneratorService {
 
     public BufferedImage generatePkmnInfoImage(Pkmn pkmn, Language language) {
-        int width = 600;
-        int height = 400;
+        int width = 800;
+        int height = 600;
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = image.createGraphics();
 
@@ -30,45 +29,126 @@ public class ImageGeneratorService {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-        // 1. Background
-        Color bgColor = Color.decode(pkmn.getPrimaryType() != null ? pkmn.getPrimaryType().getColor() : "#777777");
-        g.setColor(bgColor);
-        g.fillRect(0, 0, width, height);
-
-        // Overlay with gradient for depth
-        GradientPaint gp = new GradientPaint(0, 0, new Color(255, 255, 255, 50), 0, height, new Color(0, 0, 0, 50));
-        g.setPaint(gp);
-        g.fillRect(0, 0, width, height);
-
-        // 2. Header (Name and ID)
+        // Background
         g.setColor(Color.WHITE);
-        g.setFont(new Font("SansSerif", Font.BOLD, 28));
-        String name = getPkmnName(pkmn, language);
-        String idStr = String.format("#%03d", pkmn.getNationalDexNumber());
-        g.drawString(name, 20, 40);
-        
-        g.setFont(new Font("SansSerif", Font.PLAIN, 20));
-        int idWidth = g.getFontMetrics().stringWidth(idStr);
-        g.drawString(idStr, width - idWidth - 20, 40);
+        g.fillRect(0, 0, width, height);
 
-        // 3. Types
-        int typeY = 70;
-        drawTypeBadge(g, pkmn.getPrimaryType(), language, 20, typeY);
-        if (pkmn.getSecondaryType() != null) {
-            drawTypeBadge(g, pkmn.getSecondaryType(), language, 130, typeY);
+        Color themeBlue = new Color(0, 150, 255);
+
+        // 1. Sprite Area (Left)
+        g.setColor(themeBlue);
+        g.setStroke(new BasicStroke(3));
+        g.drawOval(50, 50, 200, 200);
+
+        // Motion lines
+        g.drawArc(30, 30, 240, 240, 45, 60);
+        g.drawArc(20, 20, 260, 260, 50, 50);
+        g.drawArc(30, 30, 240, 240, 210, 40);
+
+        drawSprite(g, pkmn.getSpriteUrl(), 70, 70, 160, 160);
+
+        // Types
+        g.setFont(new Font("SansSerif", Font.PLAIN, 18));
+        g.setColor(Color.BLACK);
+        String t1 = getTypeName(pkmn.getPrimaryType(), language);
+        String t2 = pkmn.getSecondaryType() != null ? getTypeName(pkmn.getSecondaryType(), language) : "";
+        g.drawString(t1, 70, 280);
+        if (!t2.isEmpty()) {
+            g.drawString(t2, 170, 280);
         }
 
-        // 4. Sprite
-        drawSprite(g, pkmn.getSpriteUrl(), 350, 80, 200, 200);
+        // 2. Name & Species (Middle)
+        g.setFont(new Font("SansSerif", Font.PLAIN, 36));
+        g.drawString(getPkmnName(pkmn, language), 300, 80);
 
-        // 5. Stats
-        drawStats(g, pkmn, 20, 130, 300);
+        g.setFont(new Font("SansSerif", Font.PLAIN, 20));
+        String formName = getFormName(pkmn, language);
+        if (formName != null && !formName.equalsIgnoreCase("normal")) {
+            g.drawString(formName, 300, 110);
+        } else {
+            g.drawString(pkmn.getSymbol(), 300, 110);
+        }
 
-        // 6. Abilities
-        drawAbilities(g, pkmn, language, 20, 320);
+        // Abilities
+        g.setFont(new Font("SansSerif", Font.PLAIN, 20));
+        int ay = 180;
+        if (pkmn.getPrimaryAbility() != null) {
+            g.drawString(getAbilityName(pkmn.getPrimaryAbility(), language), 300, ay);
+            ay += 30;
+        }
+        if (pkmn.getSecondaryAbility() != null) {
+            g.drawString(getAbilityName(pkmn.getSecondaryAbility(), language), 300, ay);
+            ay += 30;
+        }
+        if (pkmn.getHiddenAbility() != null) {
+            g.drawString(getAbilityName(pkmn.getHiddenAbility(), language) + " (Caché)", 300, ay);
+        }
+
+        // 3. Stats (Right)
+        g.drawString("Stats", 550, 80);
+        drawStats(g, pkmn, 550, 100);
+
+        // 4. Custom Ability Box (Bottom)
+        Ability focusAbility = pkmn.getPrimaryAbility();
+        String abilityName = focusAbility != null ? getAbilityName(focusAbility, language) : "Aucun talent";
+        String abilityDesc = focusAbility != null ? getAbilityDescription(focusAbility, language) : "";
+
+        // Main box background
+        g.setColor(Color.WHITE);
+        g.fillRoundRect(50, 400, 650, 150, 30, 30);
+        g.fillRect(50, 370, 250, 50);
+
+        // Main box outline
+        g.setColor(themeBlue);
+        g.setStroke(new BasicStroke(4));
+        g.drawRoundRect(50, 400, 650, 150, 30, 30);
+
+        // Erase intersection
+        g.setColor(Color.WHITE);
+        g.setStroke(new BasicStroke(6));
+        g.drawLine(52, 400, 298, 400);
+
+        // Label box outline
+        g.setColor(themeBlue);
+        g.setStroke(new BasicStroke(4));
+        g.drawLine(50, 420, 50, 370); // left
+        g.drawLine(50, 370, 300, 370); // top
+        g.drawLine(300, 370, 300, 400); // right
+
+        // Box texts
+        g.setColor(Color.BLACK);
+        g.setFont(new Font("SansSerif", Font.PLAIN, 22));
+        g.drawString(abilityName, 70, 395);
+
+        g.setFont(new Font("SansSerif", Font.PLAIN, 20));
+        drawWrappedText(g, abilityDesc, 80, 440, 580);
+
+        // Lightning bolt
+        g.setColor(themeBlue);
+        int[] px = { 650, 710, 740, 700, 760, 720, 640, 690, 660, 710, 670 };
+        int[] py = { 350, 330, 400, 400, 460, 460, 560, 470, 470, 410, 410 };
+        g.fillPolygon(px, py, 11);
 
         g.dispose();
         return image;
+    }
+
+    private void drawWrappedText(Graphics2D g, String text, int x, int y, int maxWidth) {
+        if (text == null || text.isBlank()) return;
+        FontMetrics fm = g.getFontMetrics();
+        String[] words = text.split(" ");
+        StringBuilder line = new StringBuilder();
+        int currentY = y;
+        for (String word : words) {
+            if (fm.stringWidth(line.toString() + word) < maxWidth) {
+                line.append(word).append(" ");
+            } else {
+                g.drawString(line.toString(), x, currentY);
+                line = new StringBuilder(word + " ");
+                currentY += fm.getHeight() + 5;
+            }
+        }
+        g.drawString(line.toString(), x, currentY);
     }
 
     private void drawSprite(Graphics2D g, String url, int x, int y, int w, int h) {
@@ -76,87 +156,48 @@ public class ImageGeneratorService {
         try {
             BufferedImage sprite = ImageIO.read(URI.create(url).toURL());
             if (sprite != null) {
-                // Draw a subtle glow/circle behind the sprite
-                g.setColor(new Color(255, 255, 255, 80));
-                g.fillOval(x, y, w, h);
-                
-                // Draw sprite centered in its area
                 g.drawImage(sprite, x, y, w, h, null);
             }
         } catch (Exception e) {
-            // Log or ignore if sprite can't be loaded
+            // Ignore if sprite can't be loaded
         }
     }
 
-    private void drawTypeBadge(Graphics2D g, Type type, Language language, int x, int y) {
-        if (type == null) return;
-        
-        String typeName = getTypeName(type, language);
-        Color typeColor = Color.decode(type.getColor());
-        
-        g.setColor(new Color(0, 0, 0, 100));
-        g.fillRoundRect(x, y, 100, 30, 10, 10);
-        
-        g.setColor(typeColor);
-        g.drawRoundRect(x, y, 100, 30, 10, 10);
-        
-        g.setColor(Color.WHITE);
-        g.setFont(new Font("SansSerif", Font.BOLD, 14));
-        int strWidth = g.getFontMetrics().stringWidth(typeName);
-        g.drawString(typeName, x + (100 - strWidth) / 2, y + 20);
-    }
-
-    private void drawStats(Graphics2D g, Pkmn pkmn, int x, int y, int width) {
-        String[] labels = {"HP", "ATK", "DEF", "SPA", "SPD", "SPE"};
+    private void drawStats(Graphics2D g, Pkmn pkmn, int x, int y) {
+        String[] labels = {"HP", "Atk", "Atk Spe", "Def", "Def Spe", "Speed"};
         int[] values = {
-            pkmn.getBaseHp(), pkmn.getBaseAttack(), pkmn.getBaseDefense(),
-            pkmn.getBaseSpeAttack(), pkmn.getBaseSpeDefense(), pkmn.getBaseSpeed()
+                pkmn.getBaseHp(), pkmn.getBaseAttack(), pkmn.getBaseSpeAttack(),
+                pkmn.getBaseDefense(), pkmn.getBaseSpeDefense(), pkmn.getBaseSpeed()
+        };
+        Color[] colors = {
+                new Color(46, 184, 92),  // HP green
+                new Color(25, 165, 235), // Atk blue
+                new Color(235, 45, 45),  // AtkSpe red
+                new Color(235, 45, 45),  // Def red
+                new Color(245, 195, 45), // DefSpe yellow
+                new Color(46, 184, 92)   // Speed green
         };
 
-        g.setFont(new Font("SansSerif", Font.BOLD, 12));
+        g.setFont(new Font("SansSerif", Font.PLAIN, 16));
         int barHeight = 15;
-        int spacing = 25;
+        int spacing = 30;
         int maxStat = 255;
-        int labelWidth = 40;
-        int barMaxWidth = width - labelWidth - 40;
+        int labelWidth = 70;
+        int barMaxWidth = 120;
 
         for (int i = 0; i < labels.length; i++) {
-            g.setColor(Color.WHITE);
+            g.setColor(Color.BLACK);
             g.drawString(labels[i], x, y + i * spacing + 12);
-            
+
             // Bar background
-            g.setColor(new Color(255, 255, 255, 50));
-            g.fillRect(x + labelWidth, y + i * spacing, barMaxWidth, barHeight);
-            
+            g.setColor(new Color(0, 0, 0, 20));
+            g.fillRoundRect(x + labelWidth, y + i * spacing, barMaxWidth, barHeight, 10, 10);
+
             // Bar foreground
-            g.setColor(getStatColor(values[i]));
+            g.setColor(colors[i]);
             int currentBarWidth = (int) ((double) values[i] / maxStat * barMaxWidth);
-            g.fillRect(x + labelWidth, y + i * spacing, currentBarWidth, barHeight);
-            
-            // Value text
-            g.setColor(Color.WHITE);
-            g.drawString(String.valueOf(values[i]), x + labelWidth + currentBarWidth + 5, y + i * spacing + 12);
+            g.fillRoundRect(x + labelWidth, y + i * spacing, currentBarWidth, barHeight, 10, 10);
         }
-    }
-
-    private void drawAbilities(Graphics2D g, Pkmn pkmn, Language language, int x, int y) {
-        g.setColor(Color.WHITE);
-        g.setFont(new Font("SansSerif", Font.BOLD, 16));
-        g.drawString("Abilities:", x, y);
-        
-        g.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        String primary = getAbilityName(pkmn.getPrimaryAbility(), language);
-        String secondary = pkmn.getSecondaryAbility() != null ? ", " + getAbilityName(pkmn.getSecondaryAbility(), language) : "";
-        String hidden = pkmn.getHiddenAbility() != null ? " (H: " + getAbilityName(pkmn.getHiddenAbility(), language) + ")" : "";
-        
-        g.drawString(primary + secondary + hidden, x, y + 25);
-    }
-
-    private Color getStatColor(int value) {
-        if (value < 60) return new Color(255, 89, 89);
-        if (value < 90) return new Color(255, 222, 82);
-        if (value < 120) return new Color(78, 199, 255);
-        return new Color(64, 255, 117);
     }
 
     private String getPkmnName(Pkmn pkmn, Language language) {
@@ -167,7 +208,16 @@ public class ImageGeneratorService {
                 .orElse(pkmn.getSymbol());
     }
 
+    private String getFormName(Pkmn pkmn, Language language) {
+        return pkmn.getLang().stream()
+                .filter(l -> l.getLanguage() == language)
+                .findFirst()
+                .map(PkmnTranslation::getFormName)
+                .orElse("normal");
+    }
+
     private String getTypeName(Type type, Language language) {
+        if (type == null) return "";
         return type.getLang().stream()
                 .filter(l -> l.getLanguage() == language)
                 .findFirst()
@@ -182,5 +232,14 @@ public class ImageGeneratorService {
                 .findFirst()
                 .map(AbilityTranslation::getName)
                 .orElse(ability.getSymbol());
+    }
+
+    private String getAbilityDescription(Ability ability, Language language) {
+        if (ability == null) return "";
+        return ability.getLang().stream()
+                .filter(l -> l.getLanguage() == language)
+                .findFirst()
+                .map(AbilityTranslation::getDescription)
+                .orElse("Aucune description disponible.");
     }
 }
