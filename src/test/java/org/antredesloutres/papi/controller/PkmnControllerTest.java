@@ -79,7 +79,7 @@ class PkmnControllerTest {
         // arrange
         Pkmn p = TestFixtures.pkmn(25, "pikachu");
         when(pkmnService.getAllPkmn(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(p)));
-        when(pkmnMapper.toSummary(p)).thenReturn(new PkmnSummaryResponse(25, "pikachu", 25, null, null));
+        when(pkmnMapper.toSummary(p)).thenReturn(new PkmnSummaryResponse(25, "pikachu", 25, null, null, null));
 
         // act + assert
         mockMvc.perform(get("/api/pokemon"))
@@ -314,6 +314,6 @@ class PkmnControllerTest {
                 Set.of(), 40, 60,
                 35, 55, 40, 50, 50, 90,
                 0, 0, 0, 0, 0, 2,
-                112, null, 190, 50, 10, Set.of(), 70);
+                112, null, 190, 50, 10, Set.of(), 70, null);
     }
 }

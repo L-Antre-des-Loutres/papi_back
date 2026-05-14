@@ -1,4 +1,5 @@
 package org.antredesloutres.papi.controller;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -6,7 +7,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.antredesloutres.papi.dto.response.ImageResponse;
+import org.antredesloutres.papi.model.domain.Pkmn;
 import org.antredesloutres.papi.model.enumerated.Language;
+import org.antredesloutres.papi.model.image.ImageMetadata;
+import org.antredesloutres.papi.repository.image.ImageMetadataRepository;
 import org.antredesloutres.papi.service.domain.PkmnService;
 import org.antredesloutres.papi.service.image.ImageGeneratorService;
 import org.antredesloutres.papi.service.image.ImageService;
@@ -20,6 +24,8 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.time.LocalDateTime;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/images")
@@ -28,36 +34,69 @@ import java.nio.file.Files;
 public class ImageController {
 
     private final ImageService imageService;
-    private final PkmnService pkmnService;
     private final ImageGeneratorService imageGeneratorService;
+    private final PkmnService pkmnService;
+    private final ImageMetadataRepository imageMetadataRepository;
 
     @Operation(
-            summary = "Generate Pokémon info card",
-            description = "Generates a stylized image containing Pokémon stats and info.",
+            summary = "Generate Pokemon Info Image",
+            description = "Generates and saves a Pokemon information summary image in the specified language. Reuses existing image if data hasn't changed.",
             responses = {
-                    @ApiResponse(
-                            responseCode = "200",
-                            description = "Image generated successfully",
-                            content = @Content(mediaType = "image/png")
-                    ),
-                    @ApiResponse(responseCode = "404", description = "Pokémon not found")
+                    @ApiResponse(responseCode = "200", description = "Image generated or retrieved successfully"),
+                    @ApiResponse(responseCode = "404", description = "Pokemon not found")
             }
     )
-    @GetMapping("/pokemon/{id}")
-    public ResponseEntity<Resource> getPkmnImage(
+    @PostMapping("/generate/pokemon/{id}")
+    public ImageResponse generatePokemonImage(
             @PathVariable Integer id,
-            @RequestParam(defaultValue = "EN") Language lang) throws IOException {
-        var pkmn = pkmnService.getPkmnById(id);
-        BufferedImage image = imageGeneratorService.generatePkmnInfoImage(pkmn, lang);
+            @RequestParam(defaultValue = "FR") Language language) throws IOException {
+        Pkmn pkmn = pkmnService.getPkmnById(id);
+        String currentStateHash = imageGeneratorService.calculateStateHash(pkmn, language);
+        
+        Optional<ImageMetadata> existingMetadata = imageMetadataRepository.findByPkmnIdAndLanguage(id, language);
+        
+        if (existingMetadata.isPresent()) {
+            ImageMetadata meta = existingMetadata.get();
+            if (currentStateHash.equals(meta.getStateHash())) {
+                try {
+                    Resource resource = imageService.loadImage(meta.getFilename());
+                    return toImageResponse(meta.getFilename(), resource);
+                } catch (Exception e) {
+                    // If file is missing, regenerate
+                }
+            }
+        }
 
-        String filename = "pkmn-" + id + "-" + lang.name().toLowerCase() + ".png";
+        // Generate new image
+        BufferedImage image = imageGeneratorService.generatePkmnInfoImage(pkmn, language);
+        String filename = String.format("pkmn-%d-%s.png", id, language.name().toLowerCase());
         imageService.saveImage(filename, image);
 
+        // Update or create metadata
+        ImageMetadata meta = existingMetadata.orElse(new ImageMetadata());
+        meta.setPkmnId(id);
+        meta.setLanguage(language);
+        meta.setFilename(filename);
+        meta.setStateHash(currentStateHash);
+        meta.setUpdatedAt(LocalDateTime.now());
+        imageMetadataRepository.save(meta);
+
         Resource resource = imageService.loadImage(filename);
-        return ResponseEntity.ok()
-                .contentType(MediaType.IMAGE_PNG)
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
-                .body(resource);
+        return toImageResponse(filename, resource);
+    }
+
+    private ImageResponse toImageResponse(String filename, Resource resource) throws IOException {
+        String url = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/images/")
+                .path(filename)
+                .toUriString();
+
+        return new ImageResponse(
+                filename,
+                MediaType.IMAGE_PNG_VALUE,
+                resource.contentLength(),
+                url
+        );
     }
 
     @Operation(
@@ -115,9 +154,8 @@ public class ImageController {
     private String getContentType(String filename, Resource file) {
         String contentType = null;
         try {
-            if (file.getFile() != null) {
-                contentType = Files.probeContentType(file.getFile().toPath());
-            }
+            file.getFile();
+            contentType = Files.probeContentType(file.getFile().toPath());
         } catch (Exception e) {
             // Fallback
         }

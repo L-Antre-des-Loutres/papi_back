@@ -2,6 +2,7 @@ package org.antredesloutres.papi.controller;
 
 import org.antredesloutres.papi.config.SecurityConfig;
 import org.antredesloutres.papi.exception.EntityNotFoundException;
+import org.antredesloutres.papi.exception.GlobalExceptionHandler;
 import org.antredesloutres.papi.security.JwtAuthFilter;
 import org.antredesloutres.papi.service.image.ImageService;
 import org.junit.jupiter.api.Test;
@@ -11,6 +12,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
@@ -26,6 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 type = FilterType.ASSIGNABLE_TYPE,
                 classes = {SecurityConfig.class, JwtAuthFilter.class}))
 @AutoConfigureMockMvc(addFilters = false)
+@Import(GlobalExceptionHandler.class)
 class ImageControllerTest {
 
     @Autowired
