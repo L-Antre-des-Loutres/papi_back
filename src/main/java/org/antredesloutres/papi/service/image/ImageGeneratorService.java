@@ -77,10 +77,45 @@ public class ImageGeneratorService {
         drawAbilitiesOnly(g, pkmn, language, (int)(1400 * sw), (int)(100 * sh), (int)(500 * sw), (int)(520 * sh), sw, sh);
 
         // 7. National Dex Circle (Bottom Right)
-        drawDexNumber(g, pkmn.getNationalDexNumber(), (int)(1540 * sw), (int)(660 * sh), (int)(300 * sw), (int)(300 * sh), sw, sh);
+        drawDexNumber(g, pkmn.getNationalDexNumber(), (int)(1540 * sw), (int)(660 * sh), (int)(300 * sw), (int)(300 * sh), sw);
 
         g.dispose();
         return image;
+    }
+
+    public String calculateStateHash(Pkmn pkmn, Language language) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("name:").append(getPkmnName(pkmn, language)).append("|");
+        sb.append("form:").append(getFormName(pkmn, language)).append("|");
+        sb.append("desc:").append(getPkmnDescription(pkmn, language)).append("|");
+        sb.append("dex:").append(pkmn.getNationalDexNumber()).append("|");
+        sb.append("sprite:").append(pkmn.getSpriteUrl()).append("|");
+        
+        sb.append("stats:").append(pkmn.getBaseHp()).append(",")
+          .append(pkmn.getBaseAttack()).append(",")
+          .append(pkmn.getBaseDefense()).append(",")
+          .append(pkmn.getBaseSpeAttack()).append(",")
+          .append(pkmn.getBaseSpeDefense()).append(",")
+          .append(pkmn.getBaseSpeed()).append("|");
+        
+        if (pkmn.getPrimaryType() != null) {
+            sb.append("t1:").append(getTypeName(pkmn.getPrimaryType(), language)).append(",").append(pkmn.getPrimaryType().getColor()).append("|");
+        }
+        if (pkmn.getSecondaryType() != null) {
+            sb.append("t2:").append(getTypeName(pkmn.getSecondaryType(), language)).append(",").append(pkmn.getSecondaryType().getColor()).append("|");
+        }
+
+        if (pkmn.getPrimaryAbility() != null) {
+            sb.append("a1:").append(getAbilityName(pkmn.getPrimaryAbility(), language)).append("|");
+        }
+        if (pkmn.getSecondaryAbility() != null) {
+            sb.append("a2:").append(getAbilityName(pkmn.getSecondaryAbility(), language)).append("|");
+        }
+        if (pkmn.getHiddenAbility() != null) {
+            sb.append("ah:").append(getAbilityName(pkmn.getHiddenAbility(), language)).append("|");
+        }
+
+        return String.valueOf(sb.toString().hashCode());
     }
 
     private void drawName(Graphics2D g, Pkmn pkmn, Language language, int x, int y, int w, int h, double sw, double sh) {
@@ -91,7 +126,7 @@ public class ImageGeneratorService {
         g.setFont(new Font("SansSerif", Font.BOLD, (int)(64 * sw)));
         FontMetrics fmN = g.getFontMetrics();
         
-        if (form != null && !form.equalsIgnoreCase("normal")) {
+        if (!form.equalsIgnoreCase("normal")) {
             g.setFont(new Font("SansSerif", Font.ITALIC, (int)(32 * sw)));
             FontMetrics fmF = g.getFontMetrics();
             int gap = (int)(15 * sh);
@@ -281,14 +316,14 @@ public class ImageGeneratorService {
         List<String> lines = new ArrayList<>();
         StringBuilder cur = new StringBuilder();
         for (String word : words) {
-            if (fm.stringWidth(cur.toString() + word) < maxW) {
+            if (fm.stringWidth(cur + word) < maxW) {
                 cur.append(word).append(" ");
             } else {
-                if (cur.length() > 0) lines.add(cur.toString().trim());
+                if (!cur.isEmpty()) lines.add(cur.toString().trim());
                 cur = new StringBuilder(word).append(" ");
             }
         }
-        if (cur.length() > 0) lines.add(cur.toString().trim());
+        if (!cur.isEmpty()) lines.add(cur.toString().trim());
         return lines;
     }
 
@@ -302,10 +337,10 @@ public class ImageGeneratorService {
                 int nH = (int) (s.getHeight() * r);
                 g.drawImage(s, x + (w - nW) / 2, y + (h - nH) / 2, nW, nH, null);
             }
-        } catch (Exception e) {}
+        } catch (Exception ignored) {}
     }
 
-    private void drawDexNumber(Graphics2D g, Integer d, int x, int y, int w, int h, double sw, double sh) {
+    private void drawDexNumber(Graphics2D g, Integer d, int x, int y, int w, int h, double sw) {
         if (d == null) return;
         String t = String.format("#%04d", d);
         g.setFont(new Font("SansSerif", Font.BOLD, (int)(76 * sw)));
@@ -320,5 +355,4 @@ public class ImageGeneratorService {
     private String getFormName(Pkmn p, Language l) { return p.getLang().stream().filter(t -> t.getLanguage() == l).findFirst().map(PkmnTranslation::getFormName).orElse("normal"); }
     private String getTypeName(Type t, Language l) { if (t == null) return ""; return t.getLang().stream().filter(tr -> tr.getLanguage() == l).findFirst().map(TypeTranslation::getName).orElse(t.getSymbol() != null ? t.getSymbol() : "???"); }
     private String getAbilityName(Ability a, Language l) { if (a == null) return "None"; return a.getLang().stream().filter(tr -> tr.getLanguage() == l).findFirst().map(AbilityTranslation::getName).orElse(a.getSymbol() != null ? a.getSymbol() : "???"); }
-    private String getAbilityDescription(Ability a, Language l) { if (a == null) return ""; return a.getLang().stream().filter(tr -> tr.getLanguage() == l).findFirst().map(AbilityTranslation::getDescription).orElse(""); }
 }
