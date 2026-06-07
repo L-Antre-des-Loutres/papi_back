@@ -98,6 +98,10 @@ public class Pkmn {
     @JoinColumn(name = "pkmn_id")
     private Set<PkmnTranslation> lang = new HashSet<>();
 
+    @JsonIgnore
+    @OneToMany(mappedBy = "pkmn", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<PkmnImage> images = new HashSet<>();
+
     public Pkmn() {}
 
     public Integer getId() {
@@ -354,6 +358,14 @@ public class Pkmn {
 
     public void setLang(Set<PkmnTranslation> lang) {
         this.lang = lang;
+    }
+
+    public Set<PkmnImage> getImages() {
+        return images;
+    }
+
+    public void setImages(Set<PkmnImage> images) {
+        this.images = images;
     }
 
     @Override

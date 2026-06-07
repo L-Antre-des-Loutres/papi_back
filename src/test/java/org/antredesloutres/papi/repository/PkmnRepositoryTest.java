@@ -13,6 +13,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.test.annotation.DirtiesContext;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -63,5 +64,31 @@ class PkmnRepositoryTest {
         // assert
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getPrimaryType()).isNotNull();
+    }
+
+    @Test
+    void findByIdForUpdate_returnsEntityWhenPresent() {
+        // arrange
+        Pkmn pikachu = new Pkmn();
+        pikachu.setSymbol("pikachu");
+        Pkmn saved = pkmnRepository.save(pikachu);
+
+        // act: smoke test — verifies the locked query compiles and returns data.
+        // True concurrency behavior (SELECT ... FOR UPDATE) is enforced by the DB
+        // and tested manually with two transactions if needed.
+        Optional<Pkmn> result = pkmnRepository.findByIdForUpdate(saved.getId());
+
+        // assert
+        assertThat(result).isPresent();
+        assertThat(result.get().getSymbol()).isEqualTo("pikachu");
+    }
+
+    @Test
+    void findByIdForUpdate_returnsEmptyWhenMissing() {
+        // act
+        Optional<Pkmn> result = pkmnRepository.findByIdForUpdate(99999);
+
+        // assert
+        assertThat(result).isEmpty();
     }
 }
