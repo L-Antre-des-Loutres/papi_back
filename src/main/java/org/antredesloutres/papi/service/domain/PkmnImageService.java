@@ -48,7 +48,9 @@ public class PkmnImageService {
 
     @Transactional
     public PkmnImage addImage(Integer pkmnId, PkmnImageRequest req) {
-        Pkmn pkmn = pkmnRepository.findById(pkmnId)
+        // Lock the parent Pkmn row: serializes concurrent transactions that
+        // mutate the "at most one main image" invariant for this Pokemon.
+        Pkmn pkmn = pkmnRepository.findByIdForUpdate(pkmnId)
                 .orElseThrow(() -> new EntityNotFoundException("Pokemon", pkmnId));
 
         if (req.main()) {
@@ -68,7 +70,7 @@ public class PkmnImageService {
 
     @Transactional
     public PkmnImage updateImage(Integer pkmnId, Long imageId, PkmnImageRequest req) {
-        PkmnImage image = requireImageBelongsToPkmn(pkmnId, imageId);
+        PkmnImage image = requireImageBelongsToPkmnWithLock(pkmnId, imageId);
 
         if (req.main() && !image.isMain()) {
             pkmnImageRepository.clearMainForPkmn(pkmnId);
@@ -84,13 +86,16 @@ public class PkmnImageService {
 
     @Transactional
     public void deleteImage(Integer pkmnId, Long imageId) {
+        // No parent lock here: deleting an image can only reduce the count of
+        // main images (0 or 1 → 0), so it cannot violate the "at most one main"
+        // invariant. A concurrent addImage(main=true) is safe to interleave.
         requireImageBelongsToPkmn(pkmnId, imageId);
         pkmnImageRepository.deleteById(imageId);
     }
 
     @Transactional
     public PkmnImage promoteToMain(Integer pkmnId, Long imageId) {
-        PkmnImage image = requireImageBelongsToPkmn(pkmnId, imageId);
+        PkmnImage image = requireImageBelongsToPkmnWithLock(pkmnId, imageId);
         pkmnImageRepository.clearMainForPkmn(pkmnId);
         image.setMain(true);
         return pkmnImageRepository.save(image);
@@ -102,8 +107,22 @@ public class PkmnImageService {
         }
     }
 
+    private void requirePkmnExistsWithLock(Integer pkmnId) {
+        pkmnRepository.findByIdForUpdate(pkmnId)
+                .orElseThrow(() -> new EntityNotFoundException("Pokemon", pkmnId));
+    }
+
     private PkmnImage requireImageBelongsToPkmn(Integer pkmnId, Long imageId) {
         requirePkmnExists(pkmnId);
+        return loadAndCheckOwnership(pkmnId, imageId);
+    }
+
+    private PkmnImage requireImageBelongsToPkmnWithLock(Integer pkmnId, Long imageId) {
+        requirePkmnExistsWithLock(pkmnId);
+        return loadAndCheckOwnership(pkmnId, imageId);
+    }
+
+    private PkmnImage loadAndCheckOwnership(Integer pkmnId, Long imageId) {
         PkmnImage image = pkmnImageRepository.findById(imageId)
                 .orElseThrow(() -> new EntityNotFoundException("PkmnImage", imageId));
         if (!image.getPkmn().getId().equals(pkmnId)) {
