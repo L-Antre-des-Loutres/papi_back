@@ -11,7 +11,10 @@ services:
     restart: always
     networks:
       - papi-network
+      - mysql_network
 
 networks:
   papi-network:
+    external: true
+  mysql_network:
     external: true
