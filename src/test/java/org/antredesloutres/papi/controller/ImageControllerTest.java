@@ -3,7 +3,10 @@ package org.antredesloutres.papi.controller;
 import org.antredesloutres.papi.config.SecurityConfig;
 import org.antredesloutres.papi.exception.EntityNotFoundException;
 import org.antredesloutres.papi.exception.GlobalExceptionHandler;
+import org.antredesloutres.papi.repository.image.ImageMetadataRepository;
 import org.antredesloutres.papi.security.JwtAuthFilter;
+import org.antredesloutres.papi.service.domain.PkmnService;
+import org.antredesloutres.papi.service.image.ImageGeneratorService;
 import org.antredesloutres.papi.service.image.ImageService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +39,15 @@ class ImageControllerTest {
 
     @MockBean
     private ImageService imageService;
+
+    @MockBean
+    private ImageGeneratorService imageGeneratorService;
+
+    @MockBean
+    private PkmnService pkmnService;
+
+    @MockBean
+    private ImageMetadataRepository imageMetadataRepository;
 
     @Test
     void getImage_ShouldReturnImage_WhenFileExists() throws Exception {
