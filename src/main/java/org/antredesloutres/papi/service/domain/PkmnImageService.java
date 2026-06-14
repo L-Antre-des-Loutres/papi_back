@@ -46,6 +46,11 @@ public class PkmnImageService {
         return pkmnImageRepository.findByPkmn_IdAndMainTrue(pkmnId);
     }
 
+    @Transactional(readOnly = true)
+    public PkmnImage getImage(Integer pkmnId, Long imageId) {
+        return requireImageBelongsToPkmn(pkmnId, imageId);
+    }
+
     @Transactional
     public PkmnImage addImage(Integer pkmnId, PkmnImageRequest req) {
         // Lock the parent Pkmn row: serializes concurrent transactions that

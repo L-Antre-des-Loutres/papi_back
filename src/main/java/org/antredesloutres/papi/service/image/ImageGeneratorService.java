@@ -26,6 +26,10 @@ public class ImageGeneratorService {
     private static final String TEMPLATE_PATH = "template/pokemon_summary.png";
 
     public BufferedImage generatePkmnInfoImage(Pkmn pkmn, Language language) {
+        return generatePkmnInfoImage(pkmn, language, pkmn.getSpriteUrl());
+    }
+
+    public BufferedImage generatePkmnInfoImage(Pkmn pkmn, Language language, String spriteUrl) {
         BufferedImage template;
         try {
             template = ImageIO.read(new File(TEMPLATE_PATH));
@@ -65,7 +69,7 @@ public class ImageGeneratorService {
         // 3. Sprite Area (Between bars)
         int spriteY = nameBarY + nameBarH;
         int spriteH = typeBarY - spriteY;
-        drawSprite(g, pkmn.getSpriteUrl(), (int)(850 * sw), spriteY, (int)(500 * sw), spriteH);
+        drawSprite(g, spriteUrl, (int)(850 * sw), spriteY, (int)(500 * sw), spriteH);
 
         // 4. Stats Box (Top Left)
         drawStats(g, pkmn, language, (int)(100 * sw), (int)(100 * sh), (int)(610 * sw), (int)(420 * sh), sw, sh);
@@ -83,13 +87,13 @@ public class ImageGeneratorService {
         return image;
     }
 
-    public String calculateStateHash(Pkmn pkmn, Language language) {
+    public String calculateStateHash(Pkmn pkmn, Language language, String spriteUrl) {
         StringBuilder sb = new StringBuilder();
         sb.append("name:").append(getPkmnName(pkmn, language)).append("|");
         sb.append("form:").append(getFormName(pkmn, language)).append("|");
         sb.append("desc:").append(getPkmnDescription(pkmn, language)).append("|");
         sb.append("dex:").append(pkmn.getNationalDexNumber()).append("|");
-        sb.append("sprite:").append(pkmn.getSpriteUrl()).append("|");
+        sb.append("sprite:").append(spriteUrl).append("|");
         
         sb.append("stats:").append(pkmn.getBaseHp()).append(",")
           .append(pkmn.getBaseAttack()).append(",")

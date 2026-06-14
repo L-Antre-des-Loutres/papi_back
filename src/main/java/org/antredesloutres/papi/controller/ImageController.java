@@ -8,9 +8,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.antredesloutres.papi.dto.response.ImageResponse;
 import org.antredesloutres.papi.model.domain.Pkmn;
+import org.antredesloutres.papi.model.domain.PkmnImage;
 import org.antredesloutres.papi.model.enumerated.Language;
 import org.antredesloutres.papi.model.image.ImageMetadata;
 import org.antredesloutres.papi.repository.image.ImageMetadataRepository;
+import org.antredesloutres.papi.service.domain.PkmnImageService;
 import org.antredesloutres.papi.service.domain.PkmnService;
 import org.antredesloutres.papi.service.image.ImageGeneratorService;
 import org.antredesloutres.papi.service.image.ImageService;
@@ -36,25 +38,31 @@ public class ImageController {
     private final ImageService imageService;
     private final ImageGeneratorService imageGeneratorService;
     private final PkmnService pkmnService;
+    private final PkmnImageService pkmnImageService;
     private final ImageMetadataRepository imageMetadataRepository;
 
     @Operation(
             summary = "Generate Pokemon Info Image",
-            description = "Generates and saves a Pokemon information summary image in the specified language. Reuses existing image if data hasn't changed.",
+            description = "Generates and saves a Pokemon information summary image in the specified language. " +
+                    "The sprite defaults to the Pokemon's main gallery image; pass an imageId to use a specific gallery image. " +
+                    "Reuses existing image if data hasn't changed.",
             responses = {
                     @ApiResponse(responseCode = "200", description = "Image generated or retrieved successfully"),
-                    @ApiResponse(responseCode = "404", description = "Pokemon not found")
+                    @ApiResponse(responseCode = "404", description = "Pokemon or image not found")
             }
     )
     @PostMapping("/generate/pokemon/{id}")
     public ImageResponse generatePokemonImage(
             @PathVariable Integer id,
-            @RequestParam(defaultValue = "FR") Language language) throws IOException {
+            @RequestParam(defaultValue = "FR") Language language,
+            @Parameter(description = "Gallery image to use as the sprite. Defaults to the main image, then the Pokemon's spriteUrl.")
+            @RequestParam(required = false) Long imageId) throws IOException {
         Pkmn pkmn = pkmnService.getPkmnById(id);
-        String currentStateHash = imageGeneratorService.calculateStateHash(pkmn, language);
-        
+        String spriteUrl = resolveSpriteUrl(pkmn, imageId);
+        String currentStateHash = imageGeneratorService.calculateStateHash(pkmn, language, spriteUrl);
+
         Optional<ImageMetadata> existingMetadata = imageMetadataRepository.findByPkmnIdAndLanguage(id, language);
-        
+
         if (existingMetadata.isPresent()) {
             ImageMetadata meta = existingMetadata.get();
             if (currentStateHash.equals(meta.getStateHash())) {
@@ -68,7 +76,7 @@ public class ImageController {
         }
 
         // Generate new image
-        BufferedImage image = imageGeneratorService.generatePkmnInfoImage(pkmn, language);
+        BufferedImage image = imageGeneratorService.generatePkmnInfoImage(pkmn, language, spriteUrl);
         String filename = String.format("pkmn-%d-%s.png", id, language.name().toLowerCase());
         imageService.saveImage(filename, image);
 
@@ -83,6 +91,19 @@ public class ImageController {
 
         Resource resource = imageService.loadImage(filename);
         return toImageResponse(filename, resource);
+    }
+
+    /**
+     * Resolves which sprite URL to draw on the card. An explicit gallery imageId wins;
+     * otherwise the Pokemon's main gallery image is used, falling back to its spriteUrl.
+     */
+    private String resolveSpriteUrl(Pkmn pkmn, Long imageId) {
+        if (imageId != null) {
+            return pkmnImageService.getImage(pkmn.getId(), imageId).getUrl();
+        }
+        return pkmnImageService.getMainImage(pkmn.getId())
+                .map(PkmnImage::getUrl)
+                .orElse(pkmn.getSpriteUrl());
     }
 
     private ImageResponse toImageResponse(String filename, Resource resource) throws IOException {
