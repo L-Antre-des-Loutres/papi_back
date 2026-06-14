@@ -31,8 +31,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -134,7 +134,7 @@ class UserControllerTest {
         when(userService.updateUser(eq(1L), any(UserUpdateRequest.class))).thenReturn(user);
 
         // act + assert
-        mockMvc.perform(put("/api/users/1")
+        mockMvc.perform(patch("/api/users/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("role", "ROLE_ADMIN"))))
                 .andExpect(status().isOk())
@@ -148,7 +148,7 @@ class UserControllerTest {
         when(userService.updateUser(eq(1L), any(UserUpdateRequest.class))).thenReturn(user);
 
         // act + assert
-        mockMvc.perform(put("/api/users/1")
+        mockMvc.perform(patch("/api/users/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isOk());
