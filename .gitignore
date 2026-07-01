@@ -71,6 +71,9 @@ application-local.properties
 application-local.yml
 application-secret.properties
 
+### Local tooling (not versioned) ###
+scripts/pokemon_import/
+
 ### Java / JVM ###
 *.class
 *.jar

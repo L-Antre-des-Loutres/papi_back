@@ -15,6 +15,7 @@ import org.antredesloutres.papi.dto.response.PkmnSummaryResponse;
 import org.antredesloutres.papi.dto.response.PkmnTranslationResponse;
 import org.antredesloutres.papi.mapper.MovesetMapper;
 import org.antredesloutres.papi.mapper.PkmnMapper;
+import org.antredesloutres.papi.model.domain.Pkmn;
 import org.antredesloutres.papi.model.enumerated.Language;
 import org.antredesloutres.papi.service.domain.MovesetService;
 import org.antredesloutres.papi.service.domain.PkmnService;
@@ -40,8 +41,13 @@ public class PkmnController {
     private final MovesetMapper movesetMapper;
 
     @GetMapping
-    public Page<PkmnSummaryResponse> getAll(@PageableDefault(size = 20, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
-        return pkmnService.getAllPkmn(pageable).map(pkmnMapper::toSummary);
+    public Page<PkmnSummaryResponse> getAll(
+            @RequestParam(required = false) String tag,
+            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
+        Page<Pkmn> page = (tag != null && !tag.isBlank())
+                ? pkmnService.getByTag(tag, pageable)
+                : pkmnService.getAllPkmn(pageable);
+        return page.map(pkmnMapper::toSummary);
     }
 
     @GetMapping("/count")

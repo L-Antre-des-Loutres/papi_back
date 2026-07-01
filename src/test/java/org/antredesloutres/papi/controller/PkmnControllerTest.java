@@ -40,6 +40,7 @@ import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -85,6 +86,35 @@ class PkmnControllerTest {
         mockMvc.perform(get("/api/pokemon"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].symbol").value("pikachu"));
+    }
+
+    @Test
+    void getAll_withTag_delegatesToGetByTag() throws Exception {
+        // arrange
+        Pkmn p = TestFixtures.pkmn(25, "pikachu");
+        when(pkmnService.getByTag(eq("1g"), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(p)));
+        when(pkmnMapper.toSummary(p)).thenReturn(new PkmnSummaryResponse(25, "pikachu", 25, null, null, null));
+
+        // act + assert
+        mockMvc.perform(get("/api/pokemon").param("tag", "1g"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].symbol").value("pikachu"));
+        verify(pkmnService).getByTag(eq("1g"), any(Pageable.class));
+        verify(pkmnService, never()).getAllPkmn(any());
+    }
+
+    @Test
+    void getAll_withBlankTag_fallsBackToGetAll() throws Exception {
+        // arrange
+        Pkmn p = TestFixtures.pkmn(25, "pikachu");
+        when(pkmnService.getAllPkmn(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(p)));
+        when(pkmnMapper.toSummary(p)).thenReturn(new PkmnSummaryResponse(25, "pikachu", 25, null, null, null));
+
+        // act + assert
+        mockMvc.perform(get("/api/pokemon").param("tag", "   "))
+                .andExpect(status().isOk());
+        verify(pkmnService).getAllPkmn(any(Pageable.class));
+        verify(pkmnService, never()).getByTag(any(), any());
     }
 
     @Test

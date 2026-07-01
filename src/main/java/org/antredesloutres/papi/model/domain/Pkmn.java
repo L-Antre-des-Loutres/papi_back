@@ -47,6 +47,9 @@ public class Pkmn {
     private Ability hiddenAbility;
 
     /** Free-form tags (e.g. "starter", "gen1"). */
+    @ElementCollection
+    @CollectionTable(name = "pokemon_tags", joinColumns = @JoinColumn(name = "pkmn_id"))
+    @Column(name = "tag")
     private Set<String> tags = new HashSet<>();
 
     /** Height in centimeters. */

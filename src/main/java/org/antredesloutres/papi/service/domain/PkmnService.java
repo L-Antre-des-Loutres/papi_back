@@ -29,6 +29,11 @@ public class PkmnService {
     }
 
     @Transactional(readOnly = true)
+    public Page<Pkmn> getByTag(String tag, Pageable pageable) {
+        return pkmnRepository.findByTag(tag, pageable);
+    }
+
+    @Transactional(readOnly = true)
     public Pkmn getPkmnById(Integer id) {
         return pkmnRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Pokemon", id));

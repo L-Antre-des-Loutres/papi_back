@@ -67,6 +67,46 @@ class PkmnRepositoryTest {
     }
 
     @Test
+    void findByTag_returnsOnlyMatchingPkmnCaseInsensitively() {
+        // arrange
+        Type electric = typeRepository.save(new Type("electric", "#f8d030", "Electric"));
+        Pkmn pikachu = new Pkmn();
+        pikachu.setSymbol("pikachu");
+        pikachu.setPrimaryType(electric);
+        pikachu.setTags(java.util.Set.of("1g", "legendaire"));
+        pkmnRepository.save(pikachu);
+
+        Pkmn chikorita = new Pkmn();
+        chikorita.setSymbol("chikorita");
+        chikorita.setTags(java.util.Set.of("2g"));
+        pkmnRepository.save(chikorita);
+
+        // act: query with different casing than stored
+        Page<Pkmn> page = pkmnRepository.findByTag("1G", PageRequest.of(0, 10, Sort.by("id")));
+
+        // assert
+        assertThat(page.getContent()).hasSize(1);
+        assertThat(page.getContent().get(0).getSymbol()).isEqualTo("pikachu");
+        assertThat(page.getContent().get(0).getPrimaryType().getSymbol()).isEqualTo("electric");
+    }
+
+    @Test
+    void findByTag_returnsEmptyPageForUnknownTag() {
+        // arrange
+        Pkmn pikachu = new Pkmn();
+        pikachu.setSymbol("pikachu");
+        pikachu.setTags(java.util.Set.of("1g"));
+        pkmnRepository.save(pikachu);
+
+        // act
+        Page<Pkmn> page = pkmnRepository.findByTag("does-not-exist", PageRequest.of(0, 10, Sort.by("id")));
+
+        // assert
+        assertThat(page.getContent()).isEmpty();
+        assertThat(page.getTotalElements()).isZero();
+    }
+
+    @Test
     void findByIdForUpdate_returnsEntityWhenPresent() {
         // arrange
         Pkmn pikachu = new Pkmn();

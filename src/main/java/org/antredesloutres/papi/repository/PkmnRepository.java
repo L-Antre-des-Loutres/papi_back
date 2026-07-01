@@ -24,6 +24,15 @@ public interface PkmnRepository extends JpaRepository<Pkmn, Integer> {
     Page<Pkmn> findAll(Pageable pageable);
 
     /**
+     * Lists Pokémon carrying the given tag, matched exactly but case-insensitively.
+     * Requires {@code Pkmn.tags} to be an {@code @ElementCollection} so the tags
+     * live in a joinable {@code pokemon_tags} table.
+     */
+    @EntityGraph(attributePaths = {"primaryType", "secondaryType"})
+    @Query("SELECT DISTINCT p FROM Pkmn p JOIN p.tags t WHERE LOWER(t) = LOWER(:tag)")
+    Page<Pkmn> findByTag(@Param("tag") String tag, Pageable pageable);
+
+    /**
      * Loads a Pkmn while acquiring a row-level write lock (SELECT ... FOR UPDATE).
      * Use only inside a transaction that mutates the Pkmn's children where an
      * invariant must hold (e.g. "at most one PkmnImage per Pkmn has main=true").
