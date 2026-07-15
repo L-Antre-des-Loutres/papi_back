@@ -51,6 +51,20 @@ public class PkmnImageService {
         return requireImageBelongsToPkmn(pkmnId, imageId);
     }
 
+    /**
+     * Resolves which sprite URL to use for a Pokemon: an explicit gallery imageId wins,
+     * otherwise the main gallery image, falling back to the Pokemon's own spriteUrl.
+     */
+    @Transactional(readOnly = true)
+    public String resolveSpriteUrl(Pkmn pkmn, Long imageId) {
+        if (imageId != null) {
+            return getImage(pkmn.getId(), imageId).getUrl();
+        }
+        return getMainImage(pkmn.getId())
+                .map(PkmnImage::getUrl)
+                .orElse(pkmn.getSpriteUrl());
+    }
+
     @Transactional
     public PkmnImage addImage(Integer pkmnId, PkmnImageRequest req) {
         // Lock the parent Pkmn row: serializes concurrent transactions that

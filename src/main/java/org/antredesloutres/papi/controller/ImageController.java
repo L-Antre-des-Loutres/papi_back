@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.antredesloutres.papi.dto.response.ImageResponse;
 import org.antredesloutres.papi.model.domain.Pkmn;
-import org.antredesloutres.papi.model.domain.PkmnImage;
 import org.antredesloutres.papi.model.enumerated.Language;
 import org.antredesloutres.papi.model.image.ImageMetadata;
 import org.antredesloutres.papi.repository.image.ImageMetadataRepository;
@@ -58,7 +57,7 @@ public class ImageController {
             @Parameter(description = "Gallery image to use as the sprite. Defaults to the main image, then the Pokemon's spriteUrl.")
             @RequestParam(required = false) Long imageId) throws IOException {
         Pkmn pkmn = pkmnService.getPkmnById(id);
-        String spriteUrl = resolveSpriteUrl(pkmn, imageId);
+        String spriteUrl = pkmnImageService.resolveSpriteUrl(pkmn, imageId);
         String currentStateHash = imageGeneratorService.calculateStateHash(pkmn, language, spriteUrl);
 
         Optional<ImageMetadata> existingMetadata = imageMetadataRepository.findByPkmnIdAndLanguage(id, language);
@@ -93,19 +92,6 @@ public class ImageController {
         return toImageResponse(filename, resource);
     }
 
-    /**
-     * Resolves which sprite URL to draw on the card. An explicit gallery imageId wins;
-     * otherwise the Pokemon's main gallery image is used, falling back to its spriteUrl.
-     */
-    private String resolveSpriteUrl(Pkmn pkmn, Long imageId) {
-        if (imageId != null) {
-            return pkmnImageService.getImage(pkmn.getId(), imageId).getUrl();
-        }
-        return pkmnImageService.getMainImage(pkmn.getId())
-                .map(PkmnImage::getUrl)
-                .orElse(pkmn.getSpriteUrl());
-    }
-
     private ImageResponse toImageResponse(String filename, Resource resource) throws IOException {
         String url = ServletUriComponentsBuilder.fromCurrentContextPath()
                 .path("/api/images/")
@@ -116,34 +102,6 @@ public class ImageController {
                 filename,
                 MediaType.IMAGE_PNG_VALUE,
                 resource.contentLength(),
-                url
-        );
-    }
-
-    @Operation(
-            summary = "Get image metadata",
-            description = "Returns metadata about a specific image including its URL, size, and content type.",
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "Metadata retrieved successfully"),
-                    @ApiResponse(responseCode = "404", description = "Image not found", content = @Content)
-            }
-    )
-    @GetMapping("/{filename:.+}/info")
-    public ImageResponse getImageInfo(
-            @Parameter(description = "The filename of the image (e.g. test-img.png)")
-            @PathVariable String filename) throws IOException {
-        Resource file = imageService.loadImage(filename);
-        String contentType = getContentType(filename, file);
-
-        String url = ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path("/api/images/")
-                .path(filename)
-                .toUriString();
-
-        return new ImageResponse(
-                filename,
-                contentType,
-                file.contentLength(),
                 url
         );
     }
