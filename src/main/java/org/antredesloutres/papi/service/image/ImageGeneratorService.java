@@ -5,6 +5,8 @@ import org.antredesloutres.papi.model.domain.Ability;
 import org.antredesloutres.papi.model.domain.Pkmn;
 import org.antredesloutres.papi.model.domain.Type;
 import org.antredesloutres.papi.model.enumerated.Language;
+import org.antredesloutres.papi.model.image.TemplateDefinition;
+import org.antredesloutres.papi.model.image.TemplateElement;
 import org.antredesloutres.papi.model.translation.AbilityTranslation;
 import org.antredesloutres.papi.model.translation.PkmnTranslation;
 import org.antredesloutres.papi.model.translation.TypeTranslation;
@@ -23,26 +25,15 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ImageGeneratorService {
 
-    private static final String TEMPLATE_PATH = "template/pokemon_summary.png";
+    /**
+     * Renders the card described by the given template definition: the template's
+     * background is drawn first, then each element at its (scaled) box.
+     */
+    public BufferedImage generatePkmnInfoImage(Pkmn pkmn, Language language, String spriteUrl, TemplateDefinition tpl) {
+        BufferedImage background = loadBackground(tpl);
 
-    public BufferedImage generatePkmnInfoImage(Pkmn pkmn, Language language) {
-        return generatePkmnInfoImage(pkmn, language, pkmn.getSpriteUrl());
-    }
-
-    public BufferedImage generatePkmnInfoImage(Pkmn pkmn, Language language, String spriteUrl) {
-        BufferedImage template;
-        try {
-            template = ImageIO.read(new File(TEMPLATE_PATH));
-        } catch (IOException e) {
-            template = new BufferedImage(1920, 1080, BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g = template.createGraphics();
-            g.setColor(Color.DARK_GRAY);
-            g.fillRect(0, 0, 1920, 1080);
-            g.dispose();
-        }
-
-        int width = template.getWidth();
-        int height = template.getHeight();
+        int width = background.getWidth();
+        int height = background.getHeight();
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = image.createGraphics();
 
@@ -51,44 +42,52 @@ public class ImageGeneratorService {
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
         g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 
-        g.drawImage(template, 0, 0, null);
+        g.drawImage(background, 0, 0, null);
 
-        double sw = width / 1920.0;
-        double sh = height / 1080.0;
+        double sw = width / (double) tpl.referenceWidth();
+        double sh = height / (double) tpl.referenceHeight();
 
-        // 1. Name Bar (Middle Top)
-        int nameBarY = (int)(100 * sh);
-        int nameBarH = (int)(115 * sh);
-        drawName(g, pkmn, language, (int)(770 * sw), nameBarY, (int)(660 * sw), nameBarH, sw, sh);
-
-        // 2. Type Bar (Middle Bottom)
-        int typeBarY = (int)(840 * sh);
-        int typeBarH = (int)(115 * sh);
-        drawTypes(g, pkmn, language, (int)(770 * sw), typeBarY, (int)(660 * sw), typeBarH, sw, sh);
-
-        // 3. Sprite Area (Between bars)
-        int spriteY = nameBarY + nameBarH;
-        int spriteH = typeBarY - spriteY;
-        drawSprite(g, spriteUrl, (int)(850 * sw), spriteY, (int)(500 * sw), spriteH);
-
-        // 4. Stats Box (Top Left)
-        drawStats(g, pkmn, language, (int)(100 * sw), (int)(100 * sh), (int)(610 * sw), (int)(420 * sh), sw, sh);
-
-        // 5. Description Box (Bottom Left)
-        drawDescription(g, pkmn, language, (int)(100 * sw), (int)(560 * sh), (int)(610 * sw), (int)(420 * sh), sw, sh);
-
-        // 6. Abilities Box (Top Right)
-        drawAbilitiesOnly(g, pkmn, language, (int)(1400 * sw), (int)(100 * sh), (int)(500 * sw), (int)(520 * sh), sw, sh);
-
-        // 7. National Dex Circle (Bottom Right)
-        drawDexNumber(g, pkmn.getNationalDexNumber(), (int)(1540 * sw), (int)(660 * sh), (int)(300 * sw), (int)(300 * sh), sw);
+        for (TemplateElement el : tpl.elements()) {
+            int x = (int) (el.x() * sw);
+            int y = (int) (el.y() * sh);
+            int w = (int) (el.w() * sw);
+            int h = (int) (el.h() * sh);
+            switch (el.type()) {
+                case NAME        -> drawName(g, pkmn, language, x, y, w, h, sw, sh);
+                case TYPES       -> drawTypes(g, pkmn, language, x, y, w, h, sw, sh);
+                case SPRITE      -> drawSprite(g, spriteUrl, x, y, w, h);
+                case STATS       -> drawStats(g, pkmn, language, x, y, w, h, sw, sh);
+                case DESCRIPTION -> drawDescription(g, pkmn, language, x, y, w, h, sw, sh);
+                case ABILITIES   -> drawAbilitiesOnly(g, pkmn, language, x, y, w, h, sw, sh);
+                case DEX_NUMBER  -> drawDexNumber(g, pkmn.getNationalDexNumber(), x, y, w, h, sw);
+            }
+        }
 
         g.dispose();
         return image;
     }
 
-    public String calculateStateHash(Pkmn pkmn, Language language, String spriteUrl) {
+    private BufferedImage loadBackground(TemplateDefinition tpl) {
+        try {
+            BufferedImage background = ImageIO.read(new File(tpl.background()));
+            if (background != null) {
+                return background;
+            }
+        } catch (IOException ignored) {
+            // fall through to the plain fallback below
+        }
+        BufferedImage fallback = new BufferedImage(tpl.referenceWidth(), tpl.referenceHeight(), BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = fallback.createGraphics();
+        g.setColor(Color.DARK_GRAY);
+        g.fillRect(0, 0, tpl.referenceWidth(), tpl.referenceHeight());
+        g.dispose();
+        return fallback;
+    }
+
+    public String calculateStateHash(Pkmn pkmn, Language language, String spriteUrl, TemplateDefinition tpl) {
         StringBuilder sb = new StringBuilder();
+        // Value-based record hash: editing a template definition invalidates its cached renders.
+        sb.append("template:").append(tpl.id()).append(":").append(tpl.hashCode()).append("|");
         sb.append("name:").append(getPkmnName(pkmn, language)).append("|");
         sb.append("form:").append(getFormName(pkmn, language)).append("|");
         sb.append("desc:").append(getPkmnDescription(pkmn, language)).append("|");

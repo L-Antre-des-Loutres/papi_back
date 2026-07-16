@@ -9,5 +9,5 @@ import java.util.Optional;
 
 @Repository
 public interface ImageMetadataRepository extends JpaRepository<ImageMetadata, Integer> {
-    Optional<ImageMetadata> findByPkmnIdAndLanguage(Integer pkmnId, Language language);
+    Optional<ImageMetadata> findByPkmnIdAndLanguageAndTemplate(Integer pkmnId, Language language, String template);
 }

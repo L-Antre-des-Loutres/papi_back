@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "image_metadata", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"pkmn_id", "language"})
+        @UniqueConstraint(columnNames = {"pkmn_id", "language", "template_id"})
 })
 public class ImageMetadata {
 
@@ -21,6 +21,10 @@ public class ImageMetadata {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Language language;
+
+    /** Id of the template the image was rendered with. */
+    @Column(name = "template_id", nullable = false)
+    private String template;
 
     @Column(nullable = false)
     private String filename;
@@ -54,6 +58,14 @@ public class ImageMetadata {
 
     public void setLanguage(Language language) {
         this.language = language;
+    }
+
+    public String getTemplate() {
+        return template;
+    }
+
+    public void setTemplate(String template) {
+        this.template = template;
     }
 
     public String getFilename() {
