@@ -22,6 +22,7 @@ public class PkmnTranslation {
     /** Form name (e.g. "mega", "alolan"). Defaults to "normal". */
     private String formName = "normal";
 
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     public PkmnTranslation() {}

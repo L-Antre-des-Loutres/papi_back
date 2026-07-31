@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface PkmnRepository extends JpaRepository<Pkmn, Integer> {
+    Optional<Pkmn> findBySymbol(String symbol);
 
     @Override
     @EntityGraph(attributePaths = {"primaryType", "secondaryType", "primaryAbility", "secondaryAbility", "hiddenAbility"})

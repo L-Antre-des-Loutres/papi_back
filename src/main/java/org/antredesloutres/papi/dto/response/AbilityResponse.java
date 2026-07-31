@@ -1,6 +1,9 @@
 package org.antredesloutres.papi.dto.response;
 
+import java.util.List;
+
 public record AbilityResponse(
         Integer id,
-        String symbol
+        String symbol,
+        List<AbilityTranslationResponse> lang
 ) {}

@@ -36,5 +36,6 @@ public record PkmnResponse(
         int eggCycles,
         Set<EggGroup> eggGroups,
         int baseFriendship,
-        String spriteUrl
+        String spriteUrl,
+        java.util.List<PkmnTranslationResponse> lang
 ) {}

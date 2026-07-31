@@ -24,6 +24,11 @@ public class Ability {
     @JoinColumn(name = "ability_id")
     private Set<AbilityTranslation> lang = new HashSet<>();
 
+    @ElementCollection
+    @CollectionTable(name = "ability_tags", joinColumns = @JoinColumn(name = "ability_id"))
+    @Column(name = "tag")
+    private Set<String> tags = new HashSet<>();
+
     public Ability() {}
 
     public Ability(String symbol) {
@@ -53,6 +58,14 @@ public class Ability {
 
     public void setLang(Set<AbilityTranslation> lang) {
         this.lang = lang;
+    }
+
+    public Set<String> getTags() {
+        return tags;
+    }
+
+    public void setTags(Set<String> tags) {
+        this.tags = tags;
     }
 
     @Override

@@ -18,6 +18,7 @@ public class AbilityTranslation {
     private Language language;
 
     private String name;
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     public AbilityTranslation() {}
