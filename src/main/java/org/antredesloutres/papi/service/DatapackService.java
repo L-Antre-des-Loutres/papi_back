@@ -61,7 +61,7 @@ public class DatapackService {
                     if (fileName.contains("data/cobblemon/abilities/") && fileName.endsWith(".js")) {
                         processAbility(extractSymbolFromPath(fileName), tag);
                     } else if (fileName.contains("data/cobblemon/moves/") && fileName.endsWith(".js")) {
-                        processMove(extractSymbolFromPath(fileName), tag);
+                        processMove(extractSymbolFromPath(fileName), tag, path);
                     } else if ((fileName.contains("data/cobblemon/species/") || fileName.contains("data/cobblemon/species_additions/")) && fileName.endsWith(".json")) {
                         processSpeciesJson(path, tag);
                     }
@@ -181,10 +181,28 @@ public class DatapackService {
         abilityRepository.save(ability);
     }
 
-    private void processMove(String symbol, String tag) {
+    private void processMove(String symbol, String tag, Path path) {
         Move move = moveRepository.findBySymbol(symbol).orElseGet(() -> {
             return new Move(symbol, symbol, null, 0, 100, 15);
         });
+        
+        try {
+            String content = Files.readString(path);
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("type:\\s*[\"']([^\"']+)[\"']");
+            java.util.regex.Matcher matcher = pattern.matcher(content);
+            if (matcher.find()) {
+                String typeName = matcher.group(1).toLowerCase();
+                Type typeObj = typeRepository.findBySymbol(typeName).orElseGet(() -> {
+                    Type t = new Type();
+                    t.setSymbol(typeName);
+                    return typeRepository.save(t);
+                });
+                move.setType(typeObj);
+            }
+        } catch (Exception e) {
+            log.error("Failed to parse move JS {}", path, e);
+        }
+
         move.getTags().add(tag);
         moveRepository.save(move);
     }
