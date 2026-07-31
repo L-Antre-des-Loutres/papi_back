@@ -94,3 +94,7 @@ dependency-reduced-pom.xml
 *.bak
 *.tmp
 *.orig
+
+
+data-test
+scratch

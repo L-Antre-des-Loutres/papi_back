@@ -38,6 +38,11 @@ public class Move {
     @JoinColumn(name = "move_id")
     private Set<MoveTranslation> lang = new HashSet<>();
 
+    @ElementCollection
+    @CollectionTable(name = "move_tags", joinColumns = @JoinColumn(name = "move_id"))
+    @Column(name = "tag")
+    private Set<String> tags = new HashSet<>();
+
     public Move() {}
 
     public Move(String symbol, String nameEN, Type type, int power, int accuracy, int pp) {
@@ -107,6 +112,14 @@ public class Move {
 
     public void setLang(Set<MoveTranslation> lang) {
         this.lang = lang;
+    }
+
+    public Set<String> getTags() {
+        return tags;
+    }
+
+    public void setTags(Set<String> tags) {
+        this.tags = tags;
     }
 
     @Override
